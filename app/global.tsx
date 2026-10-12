@@ -9,6 +9,7 @@ import React, {
     ReactNode,
 } from "react";
 import { CartItem, Product } from "@/types";
+import { getItemPrice } from "@/utils/weightPrice";
 
 /* ==================== CART CONTEXT ==================== */
 interface CartContextType {
@@ -74,7 +75,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
 
     const totalPrice = useMemo(
-        () => items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
+        () => items.reduce((sum, i) => sum + getItemPrice(i.product.price, i.selectedWeight) * i.quantity, 0),
         [items]
     );
 

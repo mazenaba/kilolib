@@ -1,14 +1,18 @@
 import { CartItem } from "@/types";
+import { getItemPrice } from "@/utils/weightPrice";
 
-const WHATSAPP_NUMBER = "01044220707"; // ← غيّر الرقم لرقم الواتساب بتاع المحل
+const WHATSAPP_NUMBER = "201044220707"; // Egypt country code (20) + number without leading zero
 
 export function generateWhatsAppMessage(items: CartItem[], total: number): string {
     const header = "🛒 *طلب جديد من كيلو لب*\n━━━━━━━━━━━━━━━━━\n\n";
 
     const itemLines = items
         .map(
-            (item, index) =>
-                `${index + 1}. *${item.product.name}* (${item.selectedWeight})\n   ${item.quantity} × ${item.product.price} ج.م = ${item.quantity * item.product.price} ج.م`
+            (item, index) => {
+                const unitPrice = getItemPrice(item.product.price, item.selectedWeight);
+                const lineTotal = unitPrice * item.quantity;
+                return `${index + 1}. *${item.product.name}* (${item.selectedWeight})\n   ${item.quantity} × ${unitPrice} ج.م = ${lineTotal} ج.م`;
+            }
         )
         .join("\n\n");
 

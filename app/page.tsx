@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Image from "next/image";
 import { products, categories } from "@/data/products";
 import Header from "@/components/Header";
 import CategoryFilter from "@/components/CategoryFilter";
@@ -77,7 +78,14 @@ export default function HomePage() {
                         </button>
                     </div>
                     <div className="hero-image">
-                        <div className="product-bowl-placeholder" style={{ width: 250, height: 250, marginTop: 0 }}></div>
+                        <Image
+                            src="/products/hero.jpg"
+                            alt="كيلو لب"
+                            width={320}
+                            height={320}
+                            style={{ objectFit: "contain", width: "100%", height: "auto" }}
+                            priority
+                        />
                     </div>
                 </div>
                 <div className="hero-wave"></div>
@@ -173,6 +181,71 @@ export default function HomePage() {
                         </button>
                     </div>
                     <div className="promo-emoji">🥜</div>
+                </div>
+            </section>
+
+            {/* Contact & Location Section */}
+            <section className="contact-section">
+                <div className="contact-inner">
+                    <div className="contact-header">
+                        <span className="contact-header-icon">📍</span>
+                        <div>
+                            <h2 className="contact-title">تواصل معنا</h2>
+                            <p className="contact-subtitle">نحن هنا لخدمتك في أي وقت</p>
+                        </div>
+                    </div>
+
+                    <div className="contact-grid">
+                        {/* Info Cards */}
+                        <div className="contact-cards">
+                            <a href="tel:+201044220707" className="contact-card">
+                                <div className="contact-card-icon">📞</div>
+                                <div>
+                                    <div className="contact-card-label">اتصل بنا</div>
+                                    <div className="contact-card-value" dir="ltr">+20 104 422 0707</div>
+                                </div>
+                            </a>
+
+                            <a href="https://wa.me/201044220707" target="_blank" rel="noreferrer" className="contact-card contact-card-whatsapp">
+                                <div className="contact-card-icon">💬</div>
+                                <div>
+                                    <div className="contact-card-label">واتساب</div>
+                                    <div className="contact-card-value" dir="ltr">+20 104 422 0707</div>
+                                </div>
+                            </a>
+
+                            <div className="contact-card">
+                                <div className="contact-card-icon">📍</div>
+                                <div>
+                                    <div className="contact-card-label">العنوان</div>
+                                    <div className="contact-card-value">امام دوران كليوباترا, طريق القصر - عجيبة الغرام،  مرسي مطروح، مصر</div>
+                                    <div className="contact-card-value">الفرع الثاني بجوار معصرة فيرجينيا-شارع القصر- مرسي مطروح، مصر</div>
+                                </div>
+                            </div>
+
+                            <div className="contact-card">
+                                <div className="contact-card-icon">🕐</div>
+                                <div>
+                                    <div className="contact-card-label">ساعات العمل</div>
+                                    <div className="contact-card-value">علي مدار الساعه </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Map */}
+                        <div className="contact-map">
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1048.0740017249072!2d27.170571430359487!3d31.356983743618507!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1461f9dd2321987b%3A0x7d4144677a1077ec!2z2YXYrdmF2LXYqSDZg9mK2YTZiCDZhNio!5e1!3m2!1sar!2seg!4v1791776429984!5m2!1sar!2seg"
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0, borderRadius: 'var(--radius-lg)' }}
+                                allowFullScreen
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                title="موقعنا على الخريطة"
+                            />
+                        </div>
+                    </div>
                 </div>
             </section>
 

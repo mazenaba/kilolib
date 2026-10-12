@@ -3,6 +3,7 @@
 import React from "react";
 import { useCart } from "@/app/global";
 import { openWhatsApp } from "@/utils/whatsapp";
+import { getItemPrice } from "@/utils/weightPrice";
 
 interface CartDrawerProps {
     isOpen: boolean;
@@ -59,7 +60,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                     <div className="cart-item-name">{item.product.name}</div>
                                     <div className="cart-item-weight">{item.selectedWeight}</div>
                                     <div className="cart-item-price">
-                                        {item.product.price * item.quantity} ج.م
+                                        {getItemPrice(item.product.price, item.selectedWeight) * item.quantity} ج.م
+                                        <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginRight: 4 }}>
+                                            ({getItemPrice(item.product.price, item.selectedWeight)} ج.م × {item.quantity})
+                                        </span>
                                     </div>
                                 </div>
 

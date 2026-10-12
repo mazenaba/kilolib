@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Product } from "@/types";
 import { useCart, useToast } from "@/app/global";
+import { getItemPrice } from "@/utils/weightPrice";
 
 interface ProductCardProps {
     product: Product;
     index: number;
 }
-
-const placeholderImages: Record<string, string> = {
-    "s1": "/products/1.jpg", "s2": "/products/2.jpg", "s3": "/products/3.jpg",
-    "n1": "/products/4.jpg", "c1": "/products/5.jpg"
-};
 
 export default function ProductCard({ product, index }: ProductCardProps) {
     const { addItem, updateQuantity, getItemQuantity } = useCart();
@@ -21,6 +18,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     const [selectedWeight, setSelectedWeight] = useState(
         product.weightOptions[product.weightOptions.length - 1] // defaults to 1 kg
     );
+    const [imgError, setImgError] = useState(false);
 
     // Real layout has 1k on left, 1/2k middle, 1/4k on right RTL
     // We'll reverse the array to match the display exactly (1ك | ½ك | ¼ك)
@@ -44,8 +42,18 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
             {/* Image Area */}
             <div className="product-card-image">
-                {/* Placeholder: Just a gray circle to match the bowl layout until real images are added */}
-                <div className="product-bowl-placeholder"></div>
+                {imgError ? (
+                    <div className="product-bowl-placeholder" style={{ width: 100, height: 100, marginTop: 0 }}></div>
+                ) : (
+                    <Image
+                        src={product.image}
+                        alt={product.name}
+                        width={160}
+                        height={160}
+                        onError={() => setImgError(true)}
+                        style={{ objectFit: "contain", width: "100%", height: "100%" }}
+                    />
+                )}
             </div>
 
             <div className="product-card-body">
@@ -79,7 +87,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
                 <div className="product-price-row">
                     <div className="product-price">
-                        <span className="amount">{product.price}</span>
+                        <span className="amount">{getItemPrice(product.price, selectedWeight)}</span>
                         <span className="currency">{product.unit}</span>
                     </div>
                 </div>

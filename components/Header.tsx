@@ -47,7 +47,7 @@ export default function Header({
                         </div>
                         <nav className="header-nav">
                             <a href="#" className="header-nav-link active">الرئيسية</a>
-                            <a href="#" className="header-nav-link">لب ومحامص</a>
+                            <a href="#" className="header-nav-link">لب </a>
                             <a href="#" className="header-nav-link">مكسرات</a>
                             <a href="#" className="header-nav-link">مقرمشات</a>
                             <a href="#" className="header-nav-link">عروضنا</a>
