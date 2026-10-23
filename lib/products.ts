@@ -1,11 +1,34 @@
 import { Product } from "@/types";
 import { products as initialSeedProducts } from "@/data/products";
-import { getSupabaseServerClient, isSupabaseConfigured } from "./supabase";
 
 // In-memory cache/store for when running locally without Supabase configured yet
 let localProductsStore: Product[] = [...initialSeedProducts];
 
-function mapDbRowToProduct(row: any): Product {
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+export function isSupabaseConfigured(): boolean {
+    return Boolean(supabaseUrl && (supabaseServiceKey || supabaseAnonKey));
+}
+
+// Build base headers for Supabase REST API
+function getHeaders(): Record<string, string> {
+    const key = supabaseServiceKey || supabaseAnonKey || "";
+    return {
+        "apikey": key,
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    };
+}
+
+// Base URL for Supabase REST API
+function restUrl(path: string): string {
+    return `${supabaseUrl}/rest/v1/${path}`;
+}
+
+function mapRowToProduct(row: any): Product {
     let weightOptions: string[] = ["¼ كج", "½ كج", "1 كج"];
     if (Array.isArray(row.weight_options)) {
         weightOptions = row.weight_options;
@@ -35,8 +58,8 @@ function mapDbRowToProduct(row: any): Product {
     };
 }
 
-function mapProductToDbRow(product: Partial<Product>) {
-    const row: any = {};
+function mapProductToRow(product: Partial<Product>): Record<string, any> {
+    const row: Record<string, any> = {};
     if (product.name !== undefined) row.name = product.name;
     if (product.description !== undefined) row.description = product.description;
     if (product.price !== undefined) row.price = Number(product.price);
@@ -55,56 +78,53 @@ function mapProductToDbRow(product: Partial<Product>) {
 
 export async function getAllProducts(): Promise<Product[]> {
     if (isSupabaseConfigured()) {
-        const client = getSupabaseServerClient();
-        if (client) {
-            try {
-                const { data, error } = await client
-                    .from("products")
-                    .select("*")
-                    .order("created_at", { ascending: false });
-
-                if (!error && data && data.length > 0) {
-                    return data.map(mapDbRowToProduct);
+        try {
+            const res = await fetch(
+                restUrl("products?select=*&order=created_at.desc"),
+                { headers: getHeaders(), cache: "no-store" }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const products = data.map(mapRowToProduct);
+                    localProductsStore = products;
+                    return products;
                 }
-                if (error) {
-                    console.warn("Supabase query error, falling back to local store:", error.message);
-                }
-            } catch (err) {
-                console.warn("Supabase connection exception:", err);
+            } else {
+                const err = await res.text();
+                console.warn("Supabase getAllProducts error:", res.status, err);
             }
+        } catch (err) {
+            console.warn("Supabase getAllProducts fetch error:", err);
         }
     }
-
     return localProductsStore;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
     if (isSupabaseConfigured()) {
-        const client = getSupabaseServerClient();
-        if (client) {
-            try {
-                const { data, error } = await client
-                    .from("products")
-                    .select("*")
-                    .eq("id", id)
-                    .single();
-
-                if (!error && data) {
-                    return mapDbRowToProduct(data);
+        try {
+            const res = await fetch(
+                restUrl(`products?id=eq.${encodeURIComponent(id)}&select=*&limit=1`),
+                { headers: getHeaders(), cache: "no-store" }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    return mapRowToProduct(data[0]);
                 }
-            } catch (err) {
-                console.warn("Supabase getById error:", err);
+            } else {
+                const err = await res.text();
+                console.warn("Supabase getProductById error:", res.status, err);
             }
+        } catch (err) {
+            console.warn("Supabase getProductById fetch error:", err);
         }
     }
-
-    const found = localProductsStore.find((p) => p.id === id);
-    return found || null;
+    return localProductsStore.find((p) => p.id === id) || null;
 }
 
-export async function createProduct(
-    input: Omit<Product, "id">
-): Promise<Product> {
+export async function createProduct(input: Omit<Product, "id">): Promise<Product> {
     const newId = "prod_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
 
     const newProduct: Product = {
@@ -118,88 +138,98 @@ export async function createProduct(
     };
 
     if (isSupabaseConfigured()) {
-        const client = getSupabaseServerClient();
-        if (client) {
-            const dbRow = {
+        try {
+            const row = {
                 id: newId,
-                ...mapProductToDbRow(newProduct),
+                ...mapProductToRow(newProduct),
                 created_at: new Date().toISOString(),
             };
 
-            const { data, error } = await client
-                .from("products")
-                .insert([dbRow])
-                .select()
-                .single();
+            const res = await fetch(restUrl("products"), {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify(row),
+            });
 
-            if (!error && data) {
-                const created = mapDbRowToProduct(data);
+            if (res.ok) {
+                const data = await res.json();
+                const created = mapRowToProduct(Array.isArray(data) ? data[0] : data);
                 localProductsStore.unshift(created);
                 return created;
-            } else if (error) {
-                console.error("Supabase insert error:", error);
-                throw new Error("فشل إضافة المنتج في قاعدة البيانات: " + error.message);
+            } else {
+                const err = await res.text();
+                console.error("Supabase createProduct error:", res.status, err);
+                throw new Error("فشل إضافة المنتج في قاعدة البيانات: " + err);
             }
+        } catch (err: any) {
+            if (err.message?.includes("فشل")) throw err;
+            console.warn("Supabase createProduct fetch exception:", err);
         }
     }
 
-    // Local fallback
     localProductsStore.unshift(newProduct);
     return newProduct;
 }
 
-export async function updateProduct(
-    id: string,
-    input: Partial<Product>
-): Promise<Product> {
+export async function updateProduct(id: string, input: Partial<Product>): Promise<Product> {
     if (isSupabaseConfigured()) {
-        const client = getSupabaseServerClient();
-        if (client) {
-            const dbRow = mapProductToDbRow(input);
-            dbRow.updated_at = new Date().toISOString();
+        try {
+            const row = {
+                ...mapProductToRow(input),
+                updated_at: new Date().toISOString(),
+            };
 
-            const { data, error } = await client
-                .from("products")
-                .update(dbRow)
-                .eq("id", id)
-                .select()
-                .single();
+            const res = await fetch(
+                restUrl(`products?id=eq.${encodeURIComponent(id)}`),
+                {
+                    method: "PATCH",
+                    headers: getHeaders(),
+                    body: JSON.stringify(row),
+                }
+            );
 
-            if (!error && data) {
-                const updated = mapDbRowToProduct(data);
+            if (res.ok) {
+                const data = await res.json();
+                const updated = mapRowToProduct(Array.isArray(data) ? data[0] : data);
                 localProductsStore = localProductsStore.map((p) => (p.id === id ? updated : p));
                 return updated;
-            } else if (error) {
-                console.error("Supabase update error:", error);
-                throw new Error("فشل تعديل المنتج في قاعدة البيانات: " + error.message);
+            } else {
+                const err = await res.text();
+                console.error("Supabase updateProduct error:", res.status, err);
+                throw new Error("فشل تعديل المنتج في قاعدة البيانات: " + err);
             }
+        } catch (err: any) {
+            if (err.message?.includes("فشل")) throw err;
+            console.warn("Supabase updateProduct fetch exception:", err);
         }
     }
 
-    // Local fallback
     const index = localProductsStore.findIndex((p) => p.id === id);
-    if (index === -1) {
-        throw new Error("المنتج غير موجود");
-    }
-
-    const updated: Product = {
-        ...localProductsStore[index],
-        ...input,
-        id,
-    };
+    if (index === -1) throw new Error("المنتج غير موجود");
+    const updated: Product = { ...localProductsStore[index], ...input, id };
     localProductsStore[index] = updated;
     return updated;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
     if (isSupabaseConfigured()) {
-        const client = getSupabaseServerClient();
-        if (client) {
-            const { error } = await client.from("products").delete().eq("id", id);
-            if (error) {
-                console.error("Supabase delete error:", error);
-                throw new Error("فشل حذف المنتج من قاعدة البيانات: " + error.message);
+        try {
+            const res = await fetch(
+                restUrl(`products?id=eq.${encodeURIComponent(id)}`),
+                {
+                    method: "DELETE",
+                    headers: getHeaders(),
+                }
+            );
+
+            if (!res.ok) {
+                const err = await res.text();
+                console.error("Supabase deleteProduct error:", res.status, err);
+                throw new Error("فشل حذف المنتج من قاعدة البيانات: " + err);
             }
+        } catch (err: any) {
+            if (err.message?.includes("فشل")) throw err;
+            console.warn("Supabase deleteProduct fetch exception:", err);
         }
     }
 
