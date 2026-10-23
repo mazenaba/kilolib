@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { products, categories } from "@/data/products";
+import { products as initialProducts, categories } from "@/data/products";
+import { Product } from "@/types";
 import Header from "@/components/Header";
 import CategoryFilter from "@/components/CategoryFilter";
 import ProductCard from "@/components/ProductCard";
@@ -10,12 +11,34 @@ import CartDrawer from "@/components/CartDrawer";
 import FloatingCartBar from "@/components/FloatingCartBar";
 
 export default function HomePage() {
+    const [productsList, setProductsList] = useState<Product[]>(initialProducts);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("all");
     const [cartOpen, setCartOpen] = useState(false);
 
+    useEffect(() => {
+        let isMounted = true;
+        async function loadLiveProducts() {
+            try {
+                const res = await fetch("/api/products");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (isMounted && Array.isArray(data.products) && data.products.length > 0) {
+                        setProductsList(data.products);
+                    }
+                }
+            } catch (err) {
+                console.warn("Could not fetch live products, using initial seed:", err);
+            }
+        }
+        loadLiveProducts();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const filteredProducts = useMemo(() => {
-        let filtered = products;
+        let filtered = productsList;
 
         if (activeCategory !== "all") {
             filtered = filtered.filter((p) => p.category === activeCategory);
@@ -32,7 +55,7 @@ export default function HomePage() {
         }
 
         return filtered;
-    }, [searchQuery, activeCategory]);
+    }, [productsList, searchQuery, activeCategory]);
 
     return (
         <>
