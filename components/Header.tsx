@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useCart } from "@/app/global";
 
 interface HeaderProps {
@@ -40,11 +41,22 @@ export default function Header({
 
                     {/* Logo and Nav (Right) */}
                     <div className="header-right">
-                        <div className="header-logo-container">
-                            <span style={{ color: '#1a6fb5', fontWeight: 900, fontSize: '26px' }}>كـيلـو</span>
-                            <span style={{ color: '#709d2b', fontWeight: 900, fontSize: '26px', marginRight: '4px' }}>لـب</span>
-                            <div style={{ position: 'absolute', bottom: -5, right: 30, fontSize: 14 }}>🍃</div>
-                        </div>
+                        <a href="#" className="header-logo-container" title="كيلو لب">
+                            <Image
+                                src="/products/hero.jpg"
+                                alt="كيلو لب"
+                                width={48}
+                                height={48}
+                                style={{
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                    display: "block",
+                                    border: "1px solid #eef2f6",
+                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)"
+                                }}
+                                priority
+                            />
+                        </a>
                         <nav className="header-nav">
                             <a href="#" className="header-nav-link active">الرئيسية</a>
                             <a href="#" className="header-nav-link">لب </a>

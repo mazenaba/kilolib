@@ -1995,8 +1995,15 @@ ol {
 
 .header-logo-container {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   position: relative;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.header-logo-container:hover {
+  transform: scale(1.05);
 }
 
 .header-center {
